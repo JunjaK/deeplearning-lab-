@@ -22,6 +22,7 @@ def run_evaluating():
     cost_sum = tf.summary.scalar("cost_eval", cross_entropy)
 
     eval_accuracy = tf.nn.in_top_k(hypothesis, eval_label_batch, 1)
+    eval_acc = model.evaluation(hypothesis, eval_label_batch)
 
     saver = tf.train.Saver()
     
@@ -37,20 +38,21 @@ def run_evaluating():
 
         merge_sum = tf.summary.merge_all()      
 
-        saver.restore(sess, './CNN_Homework/logs/model.ckpt-99')  
+        saver.restore(sess, './CNN_Homework/logs/model.ckpt-36000')  
+        
 
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess,coord=coord)
 
         for step in np.arange(FLAGS.eval_steps+1):
             _, summary, eval_loss = sess.run([eval_step, merge_sum, cross_entropy], feed_dict={keep_prob: 1.0})
-            predictions = sess.run([eval_accuracy], feed_dict={keep_prob: 1.0})
+            predictions, accuracy = sess.run([eval_accuracy, eval_acc], feed_dict={keep_prob: 1.0})
             writer.add_summary(summary, global_step=step)
 
             true_count = true_count + np.sum(predictions)
 
             if step % 10 == 0:
-                print(step, eval_loss)
+                print('step : %d, loss : %f, eval_accuracy : %f' % (step, eval_loss, accuracy*100))
 
         coord.request_stop()
         coord.join(threads)
